@@ -1,0 +1,87 @@
+## Simple explanation
+
+`println!` prints text and lets you plug values into `{}` placeholders. A few ways to control it:
+
+- **Positional args**: `{0}`, `{1}` — pick which argument goes where, counting from 0.
+- **Named args**: `{subject}` — match by name instead of position, so order in the code doesn't matter.
+- **Format specifiers** (after a `:`): change *how* a value is shown.
+  - `{:b}` `{:o}` `{:x}` → binary / octal / hex
+  - `{:>5}` → right-align, pad to width 5
+  - `{:0>5}` → pad with zeros on the left
+  - `{:0<5}` → pad with zeros on the right (left-aligned)
+  - `{:width$}` → get the width itself from a variable named `width`
+  - `{:.3}` → show 3 digits after the decimal point (this is what you need for Pi)
+- **Variable capture** (Rust 1.58+): `{number}` can grab a variable called `number` directly from scope — no need to pass it separately.
+
+The two compiler errors:
+
+1. `println!("My name is {0}, {1} {0}", "Bond");` — `{1}` asks for a *second* argument, but only `"Bond"` was given. **Fix**: pass a second string, e.g. `"James"`.
+2. `println!("This struct `{}` won't print...", Structure(3));` — `{}` uses the `Display` trait, which only works for types that explicitly implement it. Custom structs don't get this for free. `{:?}` (the `Debug` trait) can be auto-generated instead, via `#[derive(Debug)]`.
+
+## Solved code
+
+```rust
+fn main() {
+    println!("{} days", 31);
+
+    println!("{0}, this is {1}. {1}, this is {0}", "Alice", "Bob");
+
+    println!("{subject} {verb} {object}",
+             object="the lazy dog",
+             subject="the quick brown fox",
+             verb="jumps over");
+
+    println!("Base 10:               {}",   69420);
+    println!("Base 2 (binary):       {:b}", 69420);
+    println!("Base 8 (octal):        {:o}", 69420);
+    println!("Base 16 (hexadecimal): {:x}", 69420);
+
+    println!("{number:>5}", number=1);
+    println!("{number:0>5}", number=1);
+    println!("{number:0<5}", number=1);
+    println!("{number:0>width$}", number=1, width=5);
+
+    // FIXED: added the missing second argument "James"
+    println!("My name is {0}, {1} {0}", "Bond", "James");
+
+    #[allow(dead_code)]
+    #[derive(Debug)] // ADDED: lets Structure be printed with {:?}
+    struct Structure(i32);
+
+    // UNCOMMENTED: now works using {:?} instead of {}
+    println!("This struct `{:?}` will print!", Structure(3));
+
+    let number: f64 = 1.0;
+    let width: usize = 5;
+    println!("{number:>width$}");
+
+    // NEW: print Pi to 3 decimal places
+    let pi = 3.141592;
+    println!("Pi is roughly {pi:.3}");
+}
+```
+
+**Key changes:**
+1. `"My name is {0}, {1} {0}"` now gets **two** arguments: `"Bond"` and `"James"` → prints `My name is Bond, James Bond`.
+2. Added `#[derive(Debug)]` right above the struct — this auto-generates the code needed for `{:?}` to work.
+3. Changed `{}` to `{:?}` in that `println!` so it uses `Debug` instead of `Display`.
+4. Added `pi` with `{pi:.3}` — the `.3` means "3 digits after the decimal," rounding `3.141592` to `3.142`.
+
+Output:
+```
+31 days
+Alice, this is Bob. Bob, this is Alice
+the quick brown fox jumps over the lazy dog
+Base 10:               69420
+Base 2 (binary):       10000111100101100
+Base 8 (octal):        207454
+Base 16 (hexadecimal): 10f2c
+    1
+00001
+10000
+00001
+My name is Bond, James Bond
+This struct `Structure(3)` will print!
+    1
+Pi is roughly 3.142
+```
